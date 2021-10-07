@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class ConteudoDialogForm extends StatefulWidget {
-  Tarefa? tarefa;
+  final Tarefa? tarefa;
 
-  ConteudoDialogForm({Key? key, Tarefa? tarefa}) : super(key: key);
+  ConteudoDialogForm({Key? key, this.tarefa}) : super(key: key);
+
+  void init() {}
 
   @override
   State<StatefulWidget> createState() => ConteudoDialogFormState();

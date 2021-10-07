@@ -1,3 +1,4 @@
+import 'package:cadastro_tarefas/pages/filtro_page.dart';
 import 'package:cadastro_tarefas/pages/lista_tarefas_page.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Cadastro de Tarefas',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -27,6 +29,9 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.blue.shade900,
       ),
       home: ListaTarefasPage(),
+      routes: {
+        FiltroPage.routeName: (BuildContext context) => FiltroPage(),
+      },
     );
   }
 }
