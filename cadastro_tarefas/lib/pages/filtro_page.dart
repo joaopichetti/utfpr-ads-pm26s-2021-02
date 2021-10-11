@@ -44,10 +44,81 @@ class _FiltroPageState extends State<FiltroPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Filtro e Ordenação'),
+    return WillPopScope(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Filtro e Ordenação'),
+        ),
+        body: _criarBody(),
       ),
+      onWillPop: _onVoltarClick,
     );
+  }
+
+  Widget _criarBody() => ListView(
+        children: [
+          Padding(
+            padding: EdgeInsets.only(left: 10, top: 10),
+            child: Text('Campo para ordenação'),
+          ),
+          for (final campo in _camposParaOrdenacao.keys)
+            Row(
+              children: [
+                Radio(
+                  value: campo,
+                  groupValue: _campoOrdenacao,
+                  onChanged: _onCampoOrdenacaoChanged,
+                ),
+                Text(_camposParaOrdenacao[campo]!),
+              ],
+            ),
+          Divider(),
+          Row(
+            children: [
+              Checkbox(
+                value: _usarOrdemDecrescente,
+                onChanged: _onUsarOrdemDecrescenteChanged,
+              ),
+              Text('Usar ordem decrescente'),
+            ],
+          ),
+          Divider(),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10),
+            child: TextField(
+              decoration: InputDecoration(
+                labelText: 'Descrição começa com',
+              ),
+              controller: _descricaoController,
+              onChanged: _onFiltroDescricaoChanged,
+            ),
+          ),
+        ],
+      );
+
+  void _onCampoOrdenacaoChanged(String? valor) {
+    _prefs.setString(FiltroPage.chaveCampoOrdenacao, valor!);
+    _alterouValores = true;
+    setState(() {
+      _campoOrdenacao = valor;
+    });
+  }
+
+  void _onUsarOrdemDecrescenteChanged(bool? valor) {
+    _prefs.setBool(FiltroPage.chaveUsarOrdemDecrescente, valor!);
+    _alterouValores = true;
+    setState(() {
+      _usarOrdemDecrescente = valor;
+    });
+  }
+
+  void _onFiltroDescricaoChanged(String? valor) {
+    _prefs.setString(FiltroPage.chaveFiltroDescricao, valor ?? '');
+    _alterouValores = true;
+  }
+
+  Future<bool> _onVoltarClick() async {
+    Navigator.of(context).pop(_alterouValores);
+    return true;
   }
 }
