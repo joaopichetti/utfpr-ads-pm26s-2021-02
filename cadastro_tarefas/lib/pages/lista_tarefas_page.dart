@@ -1,3 +1,4 @@
+import 'package:cadastro_tarefas/dao/tarefa_dao.dart';
 import 'package:cadastro_tarefas/model/tarefa.dart';
 import 'package:cadastro_tarefas/pages/filtro_page.dart';
 import 'package:cadastro_tarefas/widgets/conteudo_dialog_form.dart';
@@ -13,14 +14,14 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
   static const acaoEditar = 'editar';
   static const acaoExcluir = 'excluir';
 
-  final _tarefas = [
-    Tarefa(
-      id: 1,
-      descricao: 'Fazer exercício 1',
-      prazo: DateTime.now().add(Duration(days: 5)),
-    ),
-  ];
-  var _ultimoId = 1;
+  final _tarefas = <Tarefa>[];
+  final _dao = TarefaDao();
+
+  @override
+  void initState() {
+    super.initState();
+    _atualizarLista();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +74,9 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
           itemBuilder: (_) => _criarItensMenuPopup(),
           onSelected: (String valorSelecionado) {
             if (valorSelecionado == acaoEditar) {
-              _abrirForm(tarefa: tarefa, index: index);
+              _abrirForm(tarefa: tarefa);
             } else {
-              _excluir(index);
+              _excluir(tarefa);
             }
           },
         );
@@ -111,7 +112,7 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
         ),
       ];
 
-  void _abrirForm({Tarefa? tarefa, int? index}) {
+  void _abrirForm({Tarefa? tarefa}) {
     final key = GlobalKey<ConteudoDialogFormState>();
     showDialog(
       context: context,
@@ -134,18 +135,13 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
               if (key.currentState?.dadosValidos() != true) {
                 return;
               }
-              // Atualiza a interface
-              setState(() {
-                final novaTarefa = key.currentState!.novaTarefa;
-                if (index == null) {
-                  novaTarefa.id = ++_ultimoId;
-                  _tarefas.add(novaTarefa);
-                } else {
-                  _tarefas[index] = novaTarefa;
+              Navigator.of(context).pop();
+              final novaTarefa = key.currentState!.novaTarefa;
+              _dao.salvar(novaTarefa).then((success) {
+                if (success) {
+                  _atualizarLista();
                 }
               });
-              // Fecha o Dialog
-              Navigator.of(context).pop();
             },
           ),
         ],
@@ -153,7 +149,7 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
     );
   }
 
-  void _excluir(int index) {
+  void _excluir(Tarefa tarefa) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -176,8 +172,13 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
             child: Text('OK'),
             onPressed: () {
               Navigator.pop(context);
-              setState(() {
-                _tarefas.removeAt(index);
+              if (tarefa.id == null) {
+                return;
+              }
+              _dao.remover(tarefa.id!).then((success) {
+                if (success) {
+                  _atualizarLista();
+                }
               });
             },
           ),
@@ -192,5 +193,15 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
     if (alterouValores == true) {
       // TODO
     }
+  }
+
+  void _atualizarLista() async {
+    final tarefas = await _dao.listar();
+    setState(() {
+      _tarefas.clear();
+      if (tarefas.isNotEmpty) {
+        _tarefas.addAll(tarefas);
+      }
+    });
   }
 }
