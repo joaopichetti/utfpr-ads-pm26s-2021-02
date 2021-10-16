@@ -4,6 +4,7 @@ import 'package:cadastro_tarefas/pages/filtro_page.dart';
 import 'package:cadastro_tarefas/widgets/conteudo_dialog_form.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ListaTarefasPage extends StatefulWidget {
   @override
@@ -191,12 +192,24 @@ class _ListaTarefasPageState extends State<ListaTarefasPage> {
     final navigator = Navigator.of(context);
     final alterouValores = await navigator.pushNamed(FiltroPage.routeName);
     if (alterouValores == true) {
-      // TODO
+      _atualizarLista();
     }
   }
 
   void _atualizarLista() async {
-    final tarefas = await _dao.listar();
+    // Carregar os valores do SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final campoOrdenacao =
+        prefs.getString(FiltroPage.chaveCampoOrdenacao) ?? Tarefa.campoId;
+    final usarOrdemDecrescente =
+        prefs.getBool(FiltroPage.chaveUsarOrdemDecrescente) == true;
+    final filtroDescricao =
+        prefs.getString(FiltroPage.chaveFiltroDescricao) ?? '';
+    final tarefas = await _dao.listar(
+      filtro: filtroDescricao,
+      campoOrdenacao: campoOrdenacao,
+      usarOrdemDecrescente: usarOrdemDecrescente,
+    );
     setState(() {
       _tarefas.clear();
       if (tarefas.isNotEmpty) {
