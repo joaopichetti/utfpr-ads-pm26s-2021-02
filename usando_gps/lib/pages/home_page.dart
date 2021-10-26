@@ -13,6 +13,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final _linhas = <String>[];
   StreamSubscription<Position>? _subscription;
+  Position? _ultimaPosicaoObtida;
+  double _distanciaTotalPercorrida = 0;
 
   bool get _monitorandoLocalizacao => _subscription != null;
 
@@ -51,12 +53,14 @@ class _HomePageState extends State<HomePage> {
               onPressed: _limparLog,
             ),
             const Divider(),
-            ListView.builder(
-              shrinkWrap: true,
-              itemCount: _linhas.length,
-              itemBuilder: (_, index) => Padding(
-                padding: const EdgeInsets.all(5),
-                child: Text(_linhas[index]),
+            Expanded(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: _linhas.length,
+                itemBuilder: (_, index) => Padding(
+                  padding: const EdgeInsets.all(5),
+                  child: Text(_linhas[index]),
+                ),
               ),
             ),
           ],
@@ -95,19 +99,38 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void _monitorarLocalizacao() async {
-    _subscription = await Geolocator.getPositionStream(
+  void _monitorarLocalizacao() {
+    _subscription = Geolocator.getPositionStream(
       distanceFilter: 20,
-      intervalDuration: Duration(seconds: 2),
+      intervalDuration: const Duration(seconds: 2),
     ).listen((Position position) {
       setState(() {
         _linhas.add(
             'Latitude: ${position.latitude} | Longitude: ${position.longitude}');
       });
+      if (_ultimaPosicaoObtida != null) {
+        final distancia = Geolocator.distanceBetween(
+          _ultimaPosicaoObtida!.latitude,
+          _ultimaPosicaoObtida!.longitude,
+          position.latitude,
+          position.longitude,
+        );
+        _distanciaTotalPercorrida += distancia;
+        _linhas.add(
+            'Distância total percorrida: ${_distanciaTotalPercorrida.toInt()}m');
+      }
+      _ultimaPosicaoObtida = position;
     });
   }
 
-  void _pararMonitoramento() {}
+  void _pararMonitoramento() {
+    _subscription?.cancel();
+    setState(() {
+      _subscription = null;
+      _ultimaPosicaoObtida = null;
+      _distanciaTotalPercorrida = 0;
+    });
+  }
 
   void _limparLog() {
     setState(() {
