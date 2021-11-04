@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:maps_launcher/maps_launcher.dart';
+import 'package:usando_mapas/pages/mapas_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -46,7 +47,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   ElevatedButton(
                     child: const Icon(Icons.map),
-                    onPressed: _abrirCoordenadasNoMapa,
+                    onPressed: _abrirNoMapaInterno,
                   ),
                 ],
               ),
@@ -88,5 +89,19 @@ class _HomePageState extends State<HomePage> {
       return;
     }
     MapsLauncher.launchQuery(_controller.text);
+  }
+
+  void _abrirNoMapaInterno() {
+    if (_localizacaoAtual == null) {
+      return;
+    }
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (BuildContext context) => MapasPage(
+            latitude: _localizacaoAtual!.latitude,
+            longitude: _localizacaoAtual!.longitude,
+          ),
+        ));
   }
 }
