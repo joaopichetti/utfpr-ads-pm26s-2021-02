@@ -11,6 +11,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   Position? _localizacaoAtual;
+  final _controller = TextEditingController();
 
   String get _textoLocalizacao => _localizacaoAtual == null
       ? ''
@@ -50,6 +51,20 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: TextField(
+              controller: _controller,
+              decoration: InputDecoration(
+                labelText: 'Endereço ou Ponto de Referência',
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.map),
+                  tooltip: 'Abrir no mapa',
+                  onPressed: _abrirEnderecoNoMapa,
+                ),
+              ),
+            ),
+          ),
         ],
       );
 
@@ -66,5 +81,12 @@ class _HomePageState extends State<HomePage> {
       _localizacaoAtual!.latitude,
       _localizacaoAtual!.longitude,
     );
+  }
+
+  void _abrirEnderecoNoMapa() {
+    if (_controller.text.trim().isEmpty) {
+      return;
+    }
+    MapsLauncher.launchQuery(_controller.text);
   }
 }
