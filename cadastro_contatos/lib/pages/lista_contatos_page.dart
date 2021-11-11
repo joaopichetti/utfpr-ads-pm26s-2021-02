@@ -1,6 +1,7 @@
 import 'package:cadastro_contatos/dao/contato_dao.dart';
 import 'package:cadastro_contatos/model/contato.dart';
 import 'package:cadastro_contatos/pages/form_contato_page.dart';
+import 'package:cadastro_contatos/widgets/visualizador_imagem.dart';
 import 'package:flutter/material.dart';
 
 class ListaContatosPage extends StatefulWidget {
@@ -77,6 +78,10 @@ class _ListaContatosPageState extends State<ListaContatosPage> {
       itemBuilder: (_, index) {
         final contato = _contatos[index];
         return ListTile(
+          leading: VisualizadorImagem(
+            tipoImagem: contato.tipoImagem,
+            caminhoImagem: contato.caminhoImagem,
+          ),
           title: Text(contato.nome),
           subtitle: Row(
             children: [
