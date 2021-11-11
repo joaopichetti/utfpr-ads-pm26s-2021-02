@@ -9,7 +9,7 @@ class Contato {
   static const tipoImagemNetwork = 'network';
   static const tipoImagemAssets = 'assets';
   static const tipoImagemFile = 'file';
-  static const _tiposPermitidos = [
+  static const tiposPermitidos = [
     tipoImagemNetwork,
     tipoImagemAssets,
     tipoImagemFile,
@@ -34,7 +34,7 @@ class Contato {
   String get tipoImagem => _tipoImagem ?? tipoImagemAssets;
 
   set tipoImagem(String tipoImagem) => _tipoImagem =
-      (_tiposPermitidos.contains(tipoImagem) ? tipoImagem : tipoImagemAssets);
+      (tiposPermitidos.contains(tipoImagem) ? tipoImagem : tipoImagemAssets);
 
   Map<String, dynamic> toMap() => {
         campoId: id,
@@ -54,4 +54,18 @@ class Contato {
         caminhoImagem:
             map[campoCaminhoImagem] is String ? map[campoCaminhoImagem] : null,
       );
+
+  static String getTipoImagemLabel(String tipoImagem) {
+    switch (tipoImagem) {
+      case tipoImagemNetwork:
+        return 'Da internet';
+      case tipoImagemAssets:
+        return 'Arquivo interno';
+      case tipoImagemFile:
+        return 'Arquivo externo';
+      default:
+        return 'Desconhecido';
+    }
+  }
+
 }

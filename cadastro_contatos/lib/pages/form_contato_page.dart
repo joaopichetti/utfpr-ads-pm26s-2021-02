@@ -1,5 +1,6 @@
 import 'package:cadastro_contatos/dao/contato_dao.dart';
 import 'package:cadastro_contatos/model/contato.dart';
+import 'package:cadastro_contatos/widgets/visualizador_imagem.dart';
 import 'package:flutter/material.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
@@ -23,6 +24,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
     filter: {'#': RegExp(r'[0-9]'), '?': RegExp(r'[0-9]?')},
   );
   var _salvando = false;
+  late String _tipoImagem;
 
   @override
   void initState() {
@@ -31,6 +33,9 @@ class _FormContatoPageState extends State<FormContatoPage> {
       _nomeController.text = widget.contato!.nome;
       _telefoneController.text = widget.contato!.telefone ?? '';
       _emailController.text = widget.contato!.email ?? '';
+      _tipoImagem = widget.contato!.tipoImagem;
+    } else {
+      _tipoImagem = Contato.tipoImagemAssets;
     }
   }
 
@@ -82,46 +87,87 @@ class _FormContatoPageState extends State<FormContatoPage> {
   }
 
   Widget _criarBody() {
-    return Padding(
-      padding: const EdgeInsets.all(10),
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Nome',
-              ),
-              controller: _nomeController,
-              validator: (String? valor) {
-                if (valor == null || valor.trim().isEmpty) {
-                  return 'Informe o nome';
-                }
-                return null;
-              },
-              readOnly: _salvando,
+    return LayoutBuilder(
+      builder: (_, BoxConstraints constraints) {
+        return Padding(
+          padding: const EdgeInsets.all(10),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Nome',
+                  ),
+                  controller: _nomeController,
+                  validator: (String? valor) {
+                    if (valor == null || valor.trim().isEmpty) {
+                      return 'Informe o nome';
+                    }
+                    return null;
+                  },
+                  readOnly: _salvando,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Telefone',
+                  ),
+                  controller: _telefoneController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [_telefoneFormatter],
+                  readOnly: _salvando,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'E-mail',
+                  ),
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  readOnly: _salvando,
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 15),
+                  child: Text('Tipo da Imagem'),
+                ),
+                DropdownButton(
+                  value: _tipoImagem,
+                  items: Contato.tiposPermitidos.map((tipoImagem) => DropdownMenuItem(
+                    value: tipoImagem,
+                    child: Text(Contato.getTipoImagemLabel(tipoImagem)),
+                  )).toList(),
+                  isExpanded: true,
+                  onChanged: (String? novoValor) {
+                    if (novoValor?.isNotEmpty == true) {
+                      setState(() {
+                        _tipoImagem = novoValor!;
+                      });
+                    }
+                  },
+                ),
+                if (_tipoImagem == Contato.tipoImagemFile) ...[
+                  ElevatedButton(
+                    child: const Text('Obter da Galeria'),
+                    onPressed: null,
+                  ),
+                  ElevatedButton(
+                    child: const Text('Usar câmera interna'),
+                    onPressed: null,
+                  ),
+                  ElevatedButton(
+                    child: const Text('Usar câmera externa'),
+                    onPressed: null,
+                  ),
+                ],
+                VisualizadorImagem(
+                  tipoImagem: _tipoImagem,
+                  size: constraints.maxWidth,
+                ),
+              ],
             ),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'Telefone',
-              ),
-              controller: _telefoneController,
-              keyboardType: TextInputType.number,
-              inputFormatters: [_telefoneFormatter],
-              readOnly: _salvando,
-            ),
-            TextFormField(
-              decoration: const InputDecoration(
-                labelText: 'E-mail',
-              ),
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              readOnly: _salvando,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
