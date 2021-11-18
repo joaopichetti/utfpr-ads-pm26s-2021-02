@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cadastro_contatos/dao/contato_dao.dart';
 import 'package:cadastro_contatos/model/contato.dart';
 import 'package:cadastro_contatos/pages/camera_page.dart';
@@ -7,8 +9,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:video_player/video_player.dart';
 
 class FormContatoPage extends StatefulWidget {
+  static const imagem = 'imagem';
+  static const video = 'video';
+
   final Contato? contato;
 
   const FormContatoPage({Key? key, this.contato}) : super(key: key);
@@ -30,7 +36,10 @@ class _FormContatoPageState extends State<FormContatoPage> {
   var _salvando = false;
   late String _tipoImagem;
   String? _caminhoImagem;
+  String? _caminhoVideo;
   final _picker = ImagePicker();
+  VideoPlayerController? _videoPlayerController;
+  bool _reproduzindoVideo = false;
 
   @override
   void initState() {
@@ -41,9 +50,17 @@ class _FormContatoPageState extends State<FormContatoPage> {
       _emailController.text = widget.contato!.email ?? '';
       _tipoImagem = widget.contato!.tipoImagem;
       _caminhoImagem = widget.contato!.caminhoImagem;
+      _caminhoVideo = widget.contato!.caminhoVideo;
     } else {
       _tipoImagem = Contato.tipoImagemAssets;
     }
+    _inicializarVideoPlayerController();
+  }
+
+  @override
+  void dispose() {
+    _videoPlayerController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -157,7 +174,8 @@ class _FormContatoPageState extends State<FormContatoPage> {
                 if (_tipoImagem == Contato.tipoImagemFile) ...[
                   ElevatedButton(
                     child: const Text('Obter da Galeria'),
-                    onPressed: () => _usarImagePicker(ImageSource.gallery),
+                    onPressed: () => _usarImagePicker(
+                        ImageSource.gallery, FormContatoPage.imagem),
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera interna'),
@@ -165,7 +183,8 @@ class _FormContatoPageState extends State<FormContatoPage> {
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera externa'),
-                    onPressed: () => _usarImagePicker(ImageSource.camera),
+                    onPressed: () => _usarImagePicker(
+                        ImageSource.camera, FormContatoPage.imagem),
                   ),
                 ],
                 VisualizadorImagem(
@@ -173,6 +192,32 @@ class _FormContatoPageState extends State<FormContatoPage> {
                   caminhoImagem: _caminhoImagem,
                   size: constraints.maxWidth,
                 ),
+                const Padding(
+                  padding: EdgeInsets.only(top: 15),
+                  child: Text('Vídeo'),
+                ),
+                ElevatedButton(
+                  child: const Text('Obter da Galeria'),
+                  onPressed: () => _usarImagePicker(
+                      ImageSource.gallery, FormContatoPage.video),
+                ),
+                ElevatedButton(
+                  child: const Text('Usar câmera interna'),
+                  onPressed: null,
+                ),
+                ElevatedButton(
+                  child: const Text('Usar câmera externa'),
+                  onPressed: () => _usarImagePicker(
+                      ImageSource.camera, FormContatoPage.video),
+                ),
+                _criarWidgetVideo(),
+                if (_videoPlayerController != null)
+                  ElevatedButton(
+                    child: Icon(_videoPlayerController!.value.isPlaying
+                        ? Icons.pause
+                        : Icons.play_arrow),
+                    onPressed: _iniciarPararVideo,
+                  ),
               ],
             ),
           ),
@@ -203,20 +248,33 @@ class _FormContatoPageState extends State<FormContatoPage> {
     Navigator.of(context).pop(true);
   }
 
-  Future<void> _usarImagePicker(ImageSource origem) async {
-    final XFile? arquivo = await _picker.pickImage(source: origem);
+  Future<void> _usarImagePicker(ImageSource origem, String tipo) async {
+    XFile? arquivo;
+    if (tipo == FormContatoPage.imagem) {
+      arquivo = await _picker.pickImage(source: origem);
+    } else {
+      arquivo = await _picker.pickVideo(source: origem);
+    }
     if (arquivo == null) {
       return;
     }
-    return _tratarArquivo(arquivo);
+    return _tratarArquivo(arquivo, tipo);
   }
 
-  Future<void> _tratarArquivo(XFile arquivo) async {
+  Future<void> _tratarArquivo(XFile arquivo, String tipo) async {
     final diretorioBase = await getApplicationDocumentsDirectory();
     final idArquivo = Uuid().v1();
-    _caminhoImagem = '${diretorioBase.path}/$idArquivo.jpg';
-    await arquivo.saveTo(_caminhoImagem!);
-    setState(() {});
+    var caminho = '${diretorioBase.path}/$idArquivo' +
+        (tipo == FormContatoPage.imagem ? '.jpg' : '.mp4');
+    await arquivo.saveTo(caminho);
+    if (tipo == FormContatoPage.imagem) {
+      setState(() {
+        _caminhoImagem = caminho;
+      });
+    } else {
+      _caminhoVideo = caminho;
+      await _inicializarVideoPlayerController();
+    }
   }
 
   Future<void> _usarCamera() async {
@@ -226,6 +284,48 @@ class _FormContatoPageState extends State<FormContatoPage> {
     if (arquivo == null) {
       return;
     }
-    return _tratarArquivo(arquivo);
+    return _tratarArquivo(arquivo, FormContatoPage.imagem);
+  }
+
+  Future<void> _inicializarVideoPlayerController() async {
+    if (_caminhoVideo == null || _caminhoVideo!.isEmpty) {
+      return;
+    }
+    if (_videoPlayerController != null) {
+      await _videoPlayerController!.dispose();
+      _videoPlayerController = null;
+    }
+    final arquivoVideo = File(_caminhoVideo!);
+    _videoPlayerController = VideoPlayerController.file(arquivoVideo);
+    _videoPlayerController!.addListener(() {
+      if (_reproduzindoVideo && !_videoPlayerController!.value.isPlaying) {
+        setState(() {});
+      }
+    });
+    await _videoPlayerController!.initialize();
+    setState(() {});
+  }
+
+  Widget _criarWidgetVideo() {
+    if (_videoPlayerController == null ||
+        !_videoPlayerController!.value.isInitialized) {
+      return Container();
+    }
+    return AspectRatio(
+      aspectRatio: _videoPlayerController!.value.aspectRatio,
+      child: VideoPlayer(_videoPlayerController!),
+    );
+  }
+
+  void _iniciarPararVideo() {
+    setState(() {
+      if (_videoPlayerController!.value.isPlaying) {
+        _videoPlayerController!.pause();
+        _reproduzindoVideo = false;
+      } else {
+        _videoPlayerController!.play();
+        _reproduzindoVideo = true;
+      }
+    });
   }
 }
