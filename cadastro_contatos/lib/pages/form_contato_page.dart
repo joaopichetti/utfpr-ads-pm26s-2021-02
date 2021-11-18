@@ -179,7 +179,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera interna'),
-                    onPressed: _usarCamera,
+                    onPressed: () => _usarCamera(FormContatoPage.imagem),
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera externa'),
@@ -203,7 +203,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
                 ),
                 ElevatedButton(
                   child: const Text('Usar câmera interna'),
-                  onPressed: null,
+                  onPressed: () => _usarCamera(FormContatoPage.video),
                 ),
                 ElevatedButton(
                   child: const Text('Usar câmera externa'),
@@ -237,6 +237,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
       email: _emailController.text,
       tipoImagem: _tipoImagem,
       caminhoImagem: _caminhoImagem,
+      caminhoVideo: _caminhoVideo,
     );
     setState(() {
       _salvando = true;
@@ -277,14 +278,14 @@ class _FormContatoPageState extends State<FormContatoPage> {
     }
   }
 
-  Future<void> _usarCamera() async {
+  Future<void> _usarCamera(String tipo) async {
     final arquivo = await Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => const CameraPage(),
+      builder: (_) => CameraPage(tipo: tipo),
     ));
     if (arquivo == null) {
       return;
     }
-    return _tratarArquivo(arquivo, FormContatoPage.imagem);
+    return _tratarArquivo(arquivo, tipo);
   }
 
   Future<void> _inicializarVideoPlayerController() async {

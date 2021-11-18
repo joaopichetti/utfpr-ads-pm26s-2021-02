@@ -1,9 +1,16 @@
+import 'dart:io';
+
 import 'package:cadastro_contatos/main.dart';
+import 'package:cadastro_contatos/pages/form_contato_page.dart';
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 class CameraPage extends StatefulWidget {
-  const CameraPage({Key? key}) : super(key: key);
+  final String tipo;
+
+  const CameraPage({Key? key, required this.tipo}) : super(key: key);
 
   @override
   _CameraPageState createState() => _CameraPageState();
@@ -34,6 +41,10 @@ class _CameraPageState extends State<CameraPage>
     with WidgetsBindingObserver, TickerProviderStateMixin {
   CameraController? controller;
   XFile? imageFile;
+  XFile? videoFile;
+  VideoPlayerController? videoController;
+  VoidCallback? videoPlayerListener;
+  bool enableAudio = true;
   double _minAvailableExposureOffset = 0.0;
   double _maxAvailableExposureOffset = 0.0;
   double _currentExposureOffset = 0.0;
@@ -229,6 +240,11 @@ class _CameraPageState extends State<CameraPage>
                 onPressed: controller != null ? onFocusModeButtonPressed : null,
               )
             ],
+            IconButton(
+              icon: Icon(enableAudio ? Icons.volume_up : Icons.volume_mute),
+              color: Colors.blue,
+              onPressed: controller != null ? onAudioModeButtonPressed : null,
+            ),
             IconButton(
               icon: Icon(controller?.value.isCaptureOrientationLocked ?? false
                   ? Icons.screen_lock_rotation
@@ -443,15 +459,59 @@ class _CameraPageState extends State<CameraPage>
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       mainAxisSize: MainAxisSize.max,
       children: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.camera_alt),
-          color: Colors.blue,
-          onPressed: cameraController != null &&
-                  cameraController.value.isInitialized &&
-                  !cameraController.value.isRecordingVideo
-              ? onTakePictureButtonPressed
-              : null,
-        ),
+        if (widget.tipo == FormContatoPage.imagem)
+          IconButton(
+            icon: const Icon(Icons.camera_alt),
+            color: Colors.blue,
+            onPressed: cameraController != null &&
+                    cameraController.value.isInitialized &&
+                    !cameraController.value.isRecordingVideo
+                ? onTakePictureButtonPressed
+                : null,
+          ),
+        if (widget.tipo == FormContatoPage.video) ...[
+          IconButton(
+            icon: const Icon(Icons.videocam),
+            color: Colors.blue,
+            onPressed: cameraController != null &&
+                    cameraController.value.isInitialized &&
+                    !cameraController.value.isRecordingVideo
+                ? onVideoRecordButtonPressed
+                : null,
+          ),
+          IconButton(
+            icon: cameraController != null &&
+                    cameraController.value.isRecordingPaused
+                ? Icon(Icons.play_arrow)
+                : Icon(Icons.pause),
+            color: Colors.blue,
+            onPressed: cameraController != null &&
+                    cameraController.value.isInitialized &&
+                    cameraController.value.isRecordingVideo
+                ? (cameraController.value.isRecordingPaused)
+                    ? onResumeButtonPressed
+                    : onPauseButtonPressed
+                : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.stop),
+            color: Colors.red,
+            onPressed: cameraController != null &&
+                    cameraController.value.isInitialized &&
+                    cameraController.value.isRecordingVideo
+                ? onStopButtonPressed
+                : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.pause_presentation),
+            color: cameraController != null &&
+                    cameraController.value.isPreviewPaused
+                ? Colors.red
+                : Colors.blue,
+            onPressed:
+                cameraController == null ? null : onPausePreviewButtonPressed,
+          ),
+        ],
       ],
     );
   }
@@ -522,6 +582,7 @@ class _CameraPageState extends State<CameraPage>
     final CameraController cameraController = CameraController(
       cameraDescription,
       ResolutionPreset.medium,
+      enableAudio: enableAudio,
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
 
@@ -600,6 +661,13 @@ class _CameraPageState extends State<CameraPage>
     }
   }
 
+  void onAudioModeButtonPressed() {
+    enableAudio = !enableAudio;
+    if (controller != null) {
+      onNewCameraSelected(controller!.description);
+    }
+  }
+
   void onCaptureOrientationLockButtonPressed() async {
     try {
       if (controller != null) {
@@ -637,6 +705,117 @@ class _CameraPageState extends State<CameraPage>
       if (mounted) setState(() {});
       showInSnackBar('Focus mode set to ${mode.toString().split('.').last}');
     });
+  }
+
+  void onVideoRecordButtonPressed() {
+    startVideoRecording().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void onStopButtonPressed() {
+    stopVideoRecording().then((file) {
+      Navigator.of(context).pop(file);
+    });
+  }
+
+  Future<void> onPausePreviewButtonPressed() async {
+    final CameraController? cameraController = controller;
+
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      showInSnackBar('Error: select a camera first.');
+      return;
+    }
+
+    if (cameraController.value.isPreviewPaused) {
+      await cameraController.resumePreview();
+    } else {
+      await cameraController.pausePreview();
+    }
+
+    if (mounted) setState(() {});
+  }
+
+  void onPauseButtonPressed() {
+    pauseVideoRecording().then((_) {
+      if (mounted) setState(() {});
+      showInSnackBar('Video recording paused');
+    });
+  }
+
+  void onResumeButtonPressed() {
+    resumeVideoRecording().then((_) {
+      if (mounted) setState(() {});
+      showInSnackBar('Video recording resumed');
+    });
+  }
+
+  Future<void> startVideoRecording() async {
+    await Future.delayed(Duration(seconds: 1));
+
+    final CameraController? cameraController = controller;
+
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      showInSnackBar('Error: select a camera first.');
+      return;
+    }
+
+    if (cameraController.value.isRecordingVideo) {
+      // A recording is already started, do nothing.
+      return;
+    }
+
+    try {
+      await cameraController.startVideoRecording();
+    } on CameraException catch (e) {
+      _showCameraException(e);
+      return;
+    }
+  }
+
+  Future<XFile?> stopVideoRecording() async {
+    final CameraController? cameraController = controller;
+
+    if (cameraController == null || !cameraController.value.isRecordingVideo) {
+      return null;
+    }
+
+    try {
+      return cameraController.stopVideoRecording();
+    } on CameraException catch (e) {
+      _showCameraException(e);
+      return null;
+    }
+  }
+
+  Future<void> pauseVideoRecording() async {
+    final CameraController? cameraController = controller;
+
+    if (cameraController == null || !cameraController.value.isRecordingVideo) {
+      return null;
+    }
+
+    try {
+      await cameraController.pauseVideoRecording();
+    } on CameraException catch (e) {
+      _showCameraException(e);
+      rethrow;
+    }
+  }
+
+  Future<void> resumeVideoRecording() async {
+    final CameraController? cameraController = controller;
+
+    if (cameraController == null || !cameraController.value.isRecordingVideo) {
+      return null;
+    }
+
+    try {
+      await cameraController.resumeVideoRecording();
+    } on CameraException catch (e) {
+      _showCameraException(e);
+      rethrow;
+    }
   }
 
   Future<void> setFlashMode(FlashMode mode) async {
@@ -694,6 +873,35 @@ class _CameraPageState extends State<CameraPage>
     }
   }
 
+  Future<void> _startVideoPlayer() async {
+    if (videoFile == null) {
+      return;
+    }
+
+    final VideoPlayerController vController = kIsWeb
+        ? VideoPlayerController.network(videoFile!.path)
+        : VideoPlayerController.file(File(videoFile!.path));
+
+    videoPlayerListener = () {
+      if (videoController != null && videoController!.value.size != null) {
+        // Refreshing the state to update video player with the correct ratio.
+        if (mounted) setState(() {});
+        videoController!.removeListener(videoPlayerListener!);
+      }
+    };
+    vController.addListener(videoPlayerListener!);
+    await vController.setLooping(true);
+    await vController.initialize();
+    await videoController?.dispose();
+    if (mounted) {
+      setState(() {
+        imageFile = null;
+        videoController = vController;
+      });
+    }
+    await vController.play();
+  }
+
   Future<XFile?> takePicture() async {
     final CameraController? cameraController = controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
@@ -722,9 +930,9 @@ class _CameraPageState extends State<CameraPage>
 
   void _logError(String code, String? message) {
     if (message != null) {
-      print('Error: $code\nError Message: $message');
+      debugPrint('Error: $code\nError Message: $message');
     } else {
-      print('Error: $code');
+      debugPrint('Error: $code');
     }
   }
 }
