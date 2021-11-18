@@ -1,5 +1,6 @@
 import 'package:cadastro_contatos/dao/contato_dao.dart';
 import 'package:cadastro_contatos/model/contato.dart';
+import 'package:cadastro_contatos/pages/camera_page.dart';
 import 'package:cadastro_contatos/widgets/visualizador_imagem.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -160,7 +161,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera interna'),
-                    onPressed: null,
+                    onPressed: _usarCamera,
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera externa'),
@@ -207,7 +208,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
     if (arquivo == null) {
       return;
     }
-    _tratarArquivo(arquivo);
+    return _tratarArquivo(arquivo);
   }
 
   Future<void> _tratarArquivo(XFile arquivo) async {
@@ -216,5 +217,15 @@ class _FormContatoPageState extends State<FormContatoPage> {
     _caminhoImagem = '${diretorioBase.path}/$idArquivo.jpg';
     await arquivo.saveTo(_caminhoImagem!);
     setState(() {});
+  }
+
+  Future<void> _usarCamera() async {
+    final arquivo = await Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => const CameraPage(),
+    ));
+    if (arquivo == null) {
+      return;
+    }
+    return _tratarArquivo(arquivo);
   }
 }

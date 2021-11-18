@@ -1,7 +1,17 @@
 import 'package:cadastro_contatos/pages/lista_contatos_page.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+List<CameraDescription> cameras = [];
+
+Future<void> main() async {
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    cameras = await availableCameras();
+  } catch (e, s) {
+    debugPrint('Error: $e');
+    debugPrint('Stack: $s');
+  }
   runApp(const MyApp());
 }
 
