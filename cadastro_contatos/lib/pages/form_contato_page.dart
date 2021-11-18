@@ -138,10 +138,12 @@ class _FormContatoPageState extends State<FormContatoPage> {
                 ),
                 DropdownButton(
                   value: _tipoImagem,
-                  items: Contato.tiposPermitidos.map((tipoImagem) => DropdownMenuItem(
-                    value: tipoImagem,
-                    child: Text(Contato.getTipoImagemLabel(tipoImagem)),
-                  )).toList(),
+                  items: Contato.tiposPermitidos
+                      .map((tipoImagem) => DropdownMenuItem(
+                            value: tipoImagem,
+                            child: Text(Contato.getTipoImagemLabel(tipoImagem)),
+                          ))
+                      .toList(),
                   isExpanded: true,
                   onChanged: (String? novoValor) {
                     if (novoValor?.isNotEmpty == true) {
@@ -162,7 +164,7 @@ class _FormContatoPageState extends State<FormContatoPage> {
                   ),
                   ElevatedButton(
                     child: const Text('Usar câmera externa'),
-                    onPressed: null,
+                    onPressed: () => _usarImagePicker(ImageSource.camera),
                   ),
                 ],
                 VisualizadorImagem(
