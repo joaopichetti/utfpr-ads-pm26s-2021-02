@@ -6,6 +6,7 @@ class Contato {
   static const campoEmail = 'email';
   static const campoTipoImagem = 'tipo_imagem';
   static const campoCaminhoImagem = 'caminho_imagem';
+  static const campoCaminhoVideo = 'caminho_video';
   static const tipoImagemNetwork = 'network';
   static const tipoImagemAssets = 'assets';
   static const tipoImagemFile = 'file';
@@ -21,6 +22,7 @@ class Contato {
   String? email;
   String? _tipoImagem;
   String? caminhoImagem;
+  String? caminhoVideo;
 
   Contato({
     this.id,
@@ -29,6 +31,7 @@ class Contato {
     this.email,
     String? tipoImagem,
     this.caminhoImagem,
+    this.caminhoVideo,
   }) : _tipoImagem = tipoImagem;
 
   String get tipoImagem => _tipoImagem ?? tipoImagemAssets;
@@ -43,6 +46,7 @@ class Contato {
         campoEmail: email,
         campoTipoImagem: tipoImagem,
         campoCaminhoImagem: caminhoImagem,
+        campoCaminhoVideo: caminhoVideo,
       };
 
   factory Contato.fromMap(Map<String, dynamic> map) => Contato(
@@ -53,6 +57,8 @@ class Contato {
         tipoImagem: map[campoTipoImagem] is String ? map[campoTipoImagem] : '',
         caminhoImagem:
             map[campoCaminhoImagem] is String ? map[campoCaminhoImagem] : null,
+        caminhoVideo:
+            map[campoCaminhoVideo] is String ? map[campoCaminhoVideo] : null,
       );
 
   static String getTipoImagemLabel(String tipoImagem) {
@@ -67,5 +73,4 @@ class Contato {
         return 'Desconhecido';
     }
   }
-
 }

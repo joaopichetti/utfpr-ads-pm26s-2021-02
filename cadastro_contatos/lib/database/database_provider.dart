@@ -4,7 +4,7 @@ import 'package:sqflite/sqlite_api.dart';
 
 class DatabaseProvider {
   static const _dbName = 'cadastro_contatos.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   DatabaseProvider._init();
   static final DatabaseProvider instance = DatabaseProvider._init();
@@ -32,12 +32,20 @@ class DatabaseProvider {
         ${Contato.campoTelefone} TEXT,
         ${Contato.campoEmail} TEXT,
         ${Contato.campoTipoImagem} TEXT NOT NULL,
-        ${Contato.campoCaminhoImagem} TEXT
+        ${Contato.campoCaminhoImagem} TEXT,
+        ${Contato.campoCaminhoVideo} TEXT
       );
     ''');
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {}
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    switch (oldVersion) {
+      case 1:
+        await db.execute('''
+          ALTER TABLE ${Contato.nomeTabela} ADD COLUMN ${Contato.campoCaminhoVideo} TEXT;
+        ''');
+    }
+  }
 
   Future<void> close() async {
     if (_database != null) {

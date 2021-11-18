@@ -42,6 +42,7 @@ class ContatoDao {
         Contato.campoEmail,
         Contato.campoTipoImagem,
         Contato.campoCaminhoImagem,
+        Contato.campoCaminhoVideo,
       ],
     );
     return resultado.map((m) => Contato.fromMap(m)).toList();
