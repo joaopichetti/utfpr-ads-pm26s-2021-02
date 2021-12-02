@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart';
+import 'package:test_api/model/cep.dart';
 
 class CepService {
   static const _baseUrl = 'https://viacep.com.br/ws/:cep/json/';
@@ -14,6 +15,11 @@ class CepService {
     }
     final decodedBody = json.decode(response.body);
     return Map<String, dynamic>.from(decodedBody);
+  }
+
+  Future<Cep> findCepAsObject(String cep) async {
+    final map = await findCep(cep);
+    return Cep.fromJson(map);
   }
 
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_api/model/cep.dart';
 import 'package:test_api/services/cep_service.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
@@ -18,7 +19,7 @@ class _ConsultaCepFragmentState extends State<ConsultaCepFragment> {
     mask: '#####-###',
     filter: {'#': RegExp(r'[0-9]')}
   );
-  Map<String, dynamic> _cepMap = {};
+  Cep? _cep;
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +54,7 @@ class _ConsultaCepFragmentState extends State<ConsultaCepFragment> {
             ),
           ),
           Container(height: 10),
-          for (final key in _cepMap.keys)
-            Text('$key: ${_cepMap[key]}'),
+          ..._buildResultWidgets(),
         ],
       ),
     );
@@ -67,9 +67,8 @@ class _ConsultaCepFragmentState extends State<ConsultaCepFragment> {
     setState(() {
       _loading = true;
     });
-    await Future.delayed(Duration(seconds: 2));
     try {
-      _cepMap = await _service.findCep(_cepFormatter.getUnmaskedText());
+      _cep = await _service.findCepAsObject(_cepFormatter.getUnmaskedText());
     } catch (e) {
       debugPrint(e.toString());
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -79,6 +78,17 @@ class _ConsultaCepFragmentState extends State<ConsultaCepFragment> {
     setState(() {
       _loading = false;
     });
+  }
+
+  List<Widget> _buildResultWidgets() {
+    final List<Widget> widgets = [];
+    if (_cep != null) {
+      final map = _cep!.toJson();
+      for (final key in map.keys) {
+        widgets.add(Text('$key: ${map[key]}'));
+      }
+    }
+    return widgets;
   }
 
 }
