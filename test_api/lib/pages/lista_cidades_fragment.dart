@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:test_api/model/cidade.dart';
+import 'package:test_api/pages/form_cidade_page.dart';
 import 'package:test_api/services/cidade_service.dart';
 
 class ListaCidadesFragment extends StatefulWidget {
   static const title = 'Cidades';
 
+  const ListaCidadesFragment({Key? key}) : super(key: key);
+
   @override
-  State<StatefulWidget> createState() => _ListaCidadesFragmentState();
+  State<StatefulWidget> createState() => ListaCidadesFragmentState();
 }
 
-class _ListaCidadesFragmentState extends State<ListaCidadesFragment> {
+class ListaCidadesFragmentState extends State<ListaCidadesFragment> {
   final _service = CidadeService();
   final List<Cidade> _cidades = [];
   final _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
@@ -47,6 +50,7 @@ class _ListaCidadesFragmentState extends State<ListaCidadesFragment> {
                 final cidade = _cidades[index];
                 return ListTile(
                   title: Text('${cidade.nome} - ${cidade.uf}'),
+                  onTap: () => _mostrarDialogActions(cidade),
                 );
               },
               separatorBuilder: (_, __) => const Divider(),
@@ -71,6 +75,87 @@ class _ListaCidadesFragmentState extends State<ListaCidadesFragment> {
         _cidades.addAll(cidades);
       }
     });
+  }
+
+  void _mostrarDialogActions(Cidade cidade) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('${cidade.nome} - ${cidade.uf}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Editar'),
+              onTap: () {
+                Navigator.pop(context);
+                abrirForm(cidade: cidade);
+              }
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(
+                Icons.delete,
+                color: Colors.red,
+              ),
+              title: const Text('Excluir'),
+              onTap: () {
+                Navigator.pop(context);
+                _excluir(cidade);
+              }
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void abrirForm({Cidade? cidade}) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => FormCidadePage(cidade: cidade),
+    )).then((changed) {
+      if (changed == true) {
+        _refreshIndicatorKey.currentState?.show();
+      }
+    });
+  }
+
+  void _excluir(Cidade cidade) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Atenção'),
+        content: Text('O registro "${cidade.nome} = ${cidade.uf}" '
+            'será removido definitivamente'),
+        actions: [
+          TextButton(
+            child: const Text('Cancelar'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          TextButton(
+            child: const Text('OK'),
+            onPressed: () {
+              Navigator.pop(context);
+              _service.deleteCidade(cidade).then((_) {
+                _refreshIndicatorKey.currentState?.show();
+              }).catchError((error, stackTrace) {
+                print(stackTrace ?? error);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Não foi possível remover a cidade. Tente novamente.'),
+                ));
+              });
+            }
+          ),
+        ],
+      ),
+    );
   }
 
 }
